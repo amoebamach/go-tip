@@ -1,0 +1,50 @@
+title Authorization Code Grant
+autonumber
+participantgroup Resource Owner 
+actor User
+participant Web Browser
+end
+participantgroup Client
+participant Client FrontEnd
+participant Client BackEnd
+end
+participantgroup 
+participant AuthServer
+participant ResourceServer
+end 
+group clients side
+User->Web Browser: Enter URL
+Web Browser->Client FrontEnd:open URL
+Client FrontEnd->Client BackEnd:open URL(API)
+Client BackEnd->Client BackEnd:Start OAuth Process
+Client BackEnd->Client FrontEnd: Redirect to AuthServer
+Client FrontEnd->Web Browser:Redirect to AuthServer
+Web Browser ->AuthServer: open redirect URL
+note right of AuthServer:클라이언트 권한 검사:\nclient_id matches request_uri\nclient_id matches scope\nclient_id matches response_type
+AuthServer->Web Browser: Show Login form
+Web Browser->User:Present Authorization UI
+User->>User:username, password 입력 후, \nAuthServer를 통해 로그인(클릭)
+User->Web Browser: username, password
+note left of Web Browser:\n 송신정보:\n client_id,\n response_type=code,\n wanted scope,\n redirect_uri
+
+Web Browser->AuthServer: username & password, 송신정보
+AuthServer->AuthServer:Checks username & password
+AuthServer->Client BackEnd:Sends authorization_code to redirect_uri
+end 
+group Server-side
+Client BackEnd->AuthServer:Sends: \nauthorization_code, \nclient_id, \nclient_secret
+
+note over Client BackEnd:info 이 과정은 반드시 'server'측의 요청이어야 함\n왜냐하면, 서버만이 client_serect을 저장할 수 있기 때문임
+AuthServer->AuthServer:authorization_code 검사
+AuthServer->Client BackEnd:access token
+end 
+note over ResourceServer: 예)\nGET /profile
+
+Client BackEnd->ResourceServer:자원/API요청( access token)
+group 2가지 중에 하나 수행
+ResourceServer->ResourceServer:access token 자체가 valid한지 검사
+ResourceServer<->AuthServer:access token 검사 요청
+end 
+ResourceServer->Client BackEnd:요청한 결과( resource)
+note over Client BackEnd:{\n"name" : "홍길동",\n"email" : "hong@email.com",\n"profile_pic" : "https://image-url" \n}
+Client BackEnd->User: Display information 또는 Redirection
